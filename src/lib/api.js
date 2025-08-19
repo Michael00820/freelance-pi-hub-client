@@ -1,14 +1,28 @@
-// src/lib/api.js
-const BASE = (import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
-const HEADERS = { "Content-Type": "application/json" };
+const BASE = import.meta.env.VITE_API_URL;
 
-async function request(path, options = {}) {
-  const res = await fetch(`${BASE}/api${path}`, { headers: HEADERS, ...options });
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-  return res.json();
+async function handle(r) {
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    throw new Error(t || `HTTP ${r.status}`);
+  }
+  const ct = r.headers.get('content-type') || '';
+  return ct.includes('application/json') ? r.json() : r.text();
 }
 
 export default {
-  get: (path) => request(path),
-  post: (path, body) => request(path, { method: "POST", body: JSON.stringify(body) }),
+  async get(path) {
+    const r = await fetch(`${BASE}${path}`);
+    return handle(r);
+  },
+  async post(path, body, token) {
+    const r = await fetch(`${BASE}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    return handle(r);
+  },
 };
