@@ -1,14 +1,14 @@
-import axios from 'axios'
-import { useAuthStore } from '../store'
+// src/lib/api.js
+const BASE = (import.meta.env.VITE_API_URL || process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+const HEADERS = { "Content-Type": "application/json" };
 
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:4000/api'
-})
+async function request(path, options = {}) {
+  const res = await fetch(`${BASE}/api${path}`, { headers: HEADERS, ...options });
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  return res.json();
+}
 
-API.interceptors.request.use((config)=>{
-  const { token } = useAuthStore.getState()
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
-
-export default API
+export default {
+  get: (path) => request(path),
+  post: (path, body) => request(path, { method: "POST", body: JSON.stringify(body) }),
+};
