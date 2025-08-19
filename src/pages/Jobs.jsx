@@ -1,7 +1,7 @@
+// src/pages/Jobs.jsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import API from '../lib/api';
-import { getUser, clearAuth } from '../lib/auth';
 
 export default function Jobs() {
   const [jobs, setJobs] = useState([]);
@@ -10,54 +10,36 @@ export default function Jobs() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await API.get('/jobs');
-        setJobs(data);
+        const r = await API.get('/jobs');
+        setJobs(r.data || []);
       } catch (e) {
         setErr('Couldn’t load jobs. Please try again.');
       }
     })();
   }, []);
 
-  const user = getUser();
-
   return (
-    <div className="max-w-3xl mx-auto p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-3xl font-bold">Open Jobs</h1>
-        <div className="flex gap-2">
-          {user ? (
-            <>
-              <Link to="/jobs/new" className="px-3 py-2 rounded bg-indigo-600 text-white">
-                Post a Job
-              </Link>
-              <button
-                onClick={() => { clearAuth(); window.location.reload(); }}
-                className="px-3 py-2 rounded border"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="px-3 py-2 rounded border">Login</Link>
-              <Link to="/register" className="px-3 py-2 rounded bg-indigo-600 text-white">Sign up</Link>
-            </>
-          )}
-        </div>
-      </div>
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">Open Jobs</h1>
 
-      {err && <p className="text-red-500">{err}</p>}
+      {err && <p className="text-red-500 mb-4">{err}</p>}
 
-      <div className="space-y-4 mt-4">
-        {jobs.map(j => (
-          <div key={j.id} className="bg-white rounded shadow p-4">
+      <div className="space-y-4">
+        {jobs.map((j) => (
+          <Link
+            key={j.id}
+            to={`/jobs/${j.id}`}
+            className="block bg-white rounded shadow p-4 hover:shadow-md transition"
+          >
             <div className="text-xl font-semibold">{j.title}</div>
-            <div className="text-sm text-gray-700 mt-1">Budget: {j.budget} {j.currency}</div>
-            <p className="mt-2 text-gray-800">{j.description}</p>
-            <div className="text-xs text-gray-500 mt-2">
+            <div className="text-sm text-gray-600 mt-1">
+              Budget: {j.budget} PI
+            </div>
+            <p className="mt-3 text-gray-700">{j.description}</p>
+            <div className="mt-3 text-sm text-gray-500">
               Platform fee {j.platformFeePct}% · Client fee {j.clientFeePct}%
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>
