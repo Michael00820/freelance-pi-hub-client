@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import API from "../lib/api";
+import API from "../lib/api.js";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -11,19 +11,13 @@ export default function Login() {
   async function handleSubmit(e) {
     e.preventDefault();
     setErr("");
-    if (!email.trim()) {
-      setErr("Email is required");
-      return;
-    }
+    if (!email.trim()) return setErr("Email is required");
     try {
       setLoading(true);
-      // Mock login: your backend can replace this endpoint later
-      const res = await API.post("/auth/login", { email });
-      // Save a fake token/email so UI can show “logged in”
+      await API.post("/auth/login", { email });
       localStorage.setItem("piHub.email", email);
-      if (res?.data?.token) localStorage.setItem("piHub.token", res.data.token);
-      navigate("/dashboard");
-    } catch (e) {
+      navigate("/jobs");
+    } catch {
       setErr("Login failed. Please try again.");
     } finally {
       setLoading(false);
@@ -31,35 +25,26 @@ export default function Login() {
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Login</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm mb-1">Email</label>
-          <input
-            type="email"
-            className="w-full border rounded px-3 py-2"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        {err && <p className="text-red-600 text-sm">{err}</p>}
-
+    <div style={{maxWidth: 480, margin: "0 auto"}}>
+      <h1 style={{fontSize: 24, fontWeight: 700, marginBottom: 16}}>Login</h1>
+      <form onSubmit={handleSubmit}>
+        <label>Email</label>
+        <input
+          type="email"
+          style={{width: "100%", border: "1px solid #ddd", borderRadius: 6, padding: 10, marginTop: 6}}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+        />
+        {err && <p style={{color: "crimson"}}>{err}</p>}
         <button
-          type="submit"
           disabled={loading}
-          className="w-full bg-indigo-600 text-white rounded px-3 py-2 disabled:opacity-60"
+          style={{marginTop: 12, width: "100%", padding: 10, borderRadius: 6, background: "#4f46e5", color: "#fff"}}
         >
           {loading ? "Logging in…" : "Login"}
         </button>
-
-        <p className="text-sm text-gray-600">
-          Don’t have an account?{" "}
-          <Link to="/register" className="text-indigo-600 underline">
-            Create one
-          </Link>
+        <p style={{marginTop: 10}}>
+          Don’t have an account? <Link to="/register">Create one</Link>
         </p>
       </form>
     </div>
