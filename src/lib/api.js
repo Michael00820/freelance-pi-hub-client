@@ -1,21 +1,34 @@
-import axios from "axios";
+// src/lib/api.js
+const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
-// Vercel/Vite only exposes variables that start with VITE_
-const BASE =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE ||
-  "http://localhost:3000";
+async function request(path, options = {}) {
+  const url = `${BASE}${path.startsWith('/') ? path : `/${path}`}`;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), 20000); // 20s timeout
 
-const api = axios.create({
-  baseURL: BASE.replace(/\/+$/, ""), // strip trailing slash
-  timeout: 15000,
-  headers: { "Content-Type": "application/json" }
-});
+  try {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      signal: controller.signal,
+      ...options,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} ${res.statusText} – ${text}`);
+    }
+    const ct = res.headers.get('content-type') || '';
+    return ct.includes('application/json') ? res.json() : res.text();
+  } finally {
+    clearTimeout(id);
+  }
+}
 
-// convenience helpers
-api.get = (path, cfg) => axios.get(`${api.defaults.baseURL}${path}`, cfg);
-api.post = (path, body, cfg) => axios.post(`${api.defaults.baseURL}${path}`, body, cfg);
-api.put = (path, body, cfg) => axios.put(`${api.defaults.baseURL}${path}`, body, cfg);
-api.delete = (path, cfg) => axios.delete(`${api.defaults.baseURL}${path}`, cfg);
+// Public API
+export const API = {
+  getJobs: () => request('/jobs'),
+  getJob: (id) => request(`/jobs/${encodeURIComponent(id)}`),
+  postJob: (payload) =>
+    request('/jobs', { method: 'POST', body: JSON.stringify(payload) }),
+};
 
-export default api;
+export default API;
