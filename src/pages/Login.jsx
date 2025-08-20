@@ -1,25 +1,28 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../lib/api";
-import { saveAuth } from "../lib/auth";
 
 export default function Login() {
-  const nav = useNavigate();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState(""); // kept for future DB auth
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const navigate = useNavigate();
 
-  async function submit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setErr("");
-    setLoading(true);
+    if (!email.trim()) {
+      setErr("Email is required");
+      return;
+    }
     try {
-      // Mock backend accepts POST /auth/login with { email }
+      setLoading(true);
+      // Mock login: your backend can replace this endpoint later
       const res = await API.post("/auth/login", { email });
-      // save token + user to localStorage for “logged-in” experience
-      if (res?.data?.token) saveAuth(res.data);
-      nav("/dashboard");
+      // Save a fake token/email so UI can show “logged in”
+      localStorage.setItem("piHub.email", email);
+      if (res?.data?.token) localStorage.setItem("piHub.token", res.data.token);
+      navigate("/dashboard");
     } catch (e) {
       setErr("Login failed. Please try again.");
     } finally {
@@ -28,46 +31,37 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-xl shadow p-6">
-        <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
-
-        {err && <div className="mb-4 p-3 rounded bg-red-100 text-red-700">{err}</div>}
-
-        <form onSubmit={submit} className="space-y-4">
+    <div className="max-w-md mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Login</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm mb-1">Email</label>
           <input
-            className="w-full border rounded px-3 py-2"
             type="email"
-            placeholder="Email address"
+            className="w-full border rounded px-3 py-2"
+            placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
           />
+        </div>
 
-          {/* Password kept for future real auth; not used by mock API */}
-          <input
-            className="w-full border rounded px-3 py-2"
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+        {err && <p className="text-red-600 text-sm">{err}</p>}
 
-          <button
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white rounded px-4 py-2"
-          >
-            {loading ? "Signing in…" : "Login"}
-          </button>
-        </form>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-indigo-600 text-white rounded px-3 py-2 disabled:opacity-60"
+        >
+          {loading ? "Logging in…" : "Login"}
+        </button>
 
-        <p className="text-center mt-4 text-gray-600">
+        <p className="text-sm text-gray-600">
           Don’t have an account?{" "}
-          <Link to="/register" className="text-indigo-600 hover:underline">
+          <Link to="/register" className="text-indigo-600 underline">
             Create one
           </Link>
         </p>
-      </div>
+      </form>
     </div>
   );
 }
