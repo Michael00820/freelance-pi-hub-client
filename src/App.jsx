@@ -1,39 +1,67 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
-import Jobs from "./pages/Jobs.jsx";
-import Login from "./pages/Login.jsx";
-import Register from "./pages/Register.jsx";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import AuthProvider, { useAuth } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-function Header() {
+import Jobs from "./pages/Jobs";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import JobDetails from "./pages/JobDetails";
+import PostJob from "./pages/PostJob";
+
+function Navbar() {
+  const { user, logout } = useAuth();
   return (
-    <header style={{borderBottom: "1px solid #eee"}}>
-      <nav style={{maxWidth: 960, margin: "0 auto", padding: "12px 16px", display: "flex", gap: 16}}>
-        <Link to="/" style={{fontWeight: 700}}>Freelance Pi Hub</Link>
-        <Link to="/jobs">Jobs</Link>
-        <div style={{marginLeft: "auto", display: "flex", gap: 8}}>
-          <Link to="/login">Login</Link>
-          <Link to="/register" style={{padding: "2px 8px", border: "1px solid #ddd", borderRadius: 6}}>
-            Sign up
-          </Link>
-        </div>
-      </nav>
+    <header className="bg-indigo-700 text-white">
+      <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <Link to="/" className="font-semibold">Freelance Pi Hub</Link>
+        <nav className="flex items-center gap-4">
+          <Link to="/jobs" className="hover:underline">Jobs</Link>
+          {user ? (
+            <>
+              <Link to="/post-job" className="hover:underline">Post a Job</Link>
+              <button onClick={logout} className="px-3 py-1 bg-black/20 rounded">
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="px-3 py-1 bg-black/20 rounded">Login</Link>
+              <Link to="/register" className="px-3 py-1 bg-black/20 rounded">Sign up</Link>
+            </>
+          )}
+        </nav>
+      </div>
     </header>
   );
 }
 
+function Home() { return <Jobs />; }
+
 export default function App() {
   return (
-    <BrowserRouter>
-      <Header />
-      <main style={{maxWidth: 960, margin: "0 auto", padding: "16px"}}>
-        <Routes>
-          <Route path="/" element={<Navigate to="/jobs" replace />} />
-          <Route path="/jobs" element={<Jobs />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="*" element={<Navigate to="/jobs" replace />} />
-        </Routes>
-      </main>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Navbar />
+        <main className="max-w-5xl mx-auto p-4">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/jobs" element={<Jobs />} />
+            <Route path="/jobs/:id" element={<JobDetails />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route
+              path="/post-job"
+              element={
+                <ProtectedRoute>
+                  <PostJob />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<p className="p-6">Not found.</p>} />
+          </Routes>
+        </main>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
