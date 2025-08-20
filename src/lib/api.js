@@ -1,34 +1,44 @@
-// src/lib/api.js
-const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+// Simple fetch wrapper that respects Vite env
+const BASE =
+  (typeof import.meta !== "undefined" &&
+    import.meta.env &&
+    import.meta.env.VITE_API_BASE) ||
+  (typeof process !== "undefined" &&
+    process.env &&
+    process.env.VITE_API_BASE) ||
+  "";
 
-async function request(path, options = {}) {
-  const url = `${BASE}${path.startsWith('/') ? path : `/${path}`}`;
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), 20000); // 20s timeout
+const base = BASE.replace(/\/+$/, ""); // trim trailing slash
 
-  try {
-    const res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-      signal: controller.signal,
-      ...options,
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`HTTP ${res.status} ${res.statusText} – ${text}`);
-    }
-    const ct = res.headers.get('content-type') || '';
-    return ct.includes('application/json') ? res.json() : res.text();
-  } finally {
-    clearTimeout(id);
+async function http(method, path, body) {
+  const url = path.startsWith("http") ? path : `${base}${path}`;
+  const init = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+  if (body) init.body = JSON.stringify(body);
+
+  const res = await fetch(url, init);
+  const isJson = res.headers.get("content-type")?.includes("application/json");
+  const data = isJson ? await res.json() : null;
+
+  if (!res.ok) {
+    const message = data?.message || `Request failed (${res.status})`;
+    const err = new Error(message);
+    err.status = res.status;
+    err.data = data;
+    throw err;
   }
+  return { data };
 }
 
-// Public API
-export const API = {
-  getJobs: () => request('/jobs'),
-  getJob: (id) => request(`/jobs/${encodeURIComponent(id)}`),
-  postJob: (payload) =>
-    request('/jobs', { method: 'POST', body: JSON.stringify(payload) }),
+const API = {
+  get: (p) => http("GET", p),
+  post: (p, b) => http("POST", p, b),
+  put: (p, b) => http("PUT", p, b),
+  del: (p) => http("DELETE", p),
 };
 
 export default API;
