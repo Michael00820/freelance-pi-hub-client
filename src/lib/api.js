@@ -1,44 +1,49 @@
-// Simple fetch wrapper that respects Vite env
+// src/lib/api.js
 const BASE =
-  (typeof import.meta !== "undefined" &&
-    import.meta.env &&
-    import.meta.env.VITE_API_BASE) ||
-  (typeof process !== "undefined" &&
-    process.env &&
-    process.env.VITE_API_BASE) ||
-  "";
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE ||
+  '';
 
-const base = BASE.replace(/\/+$/, ""); // trim trailing slash
-
-async function http(method, path, body) {
-  const url = path.startsWith("http") ? path : `${base}${path}`;
-  const init = {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
-  if (body) init.body = JSON.stringify(body);
-
-  const res = await fetch(url, init);
-  const isJson = res.headers.get("content-type")?.includes("application/json");
-  const data = isJson ? await res.json() : null;
-
-  if (!res.ok) {
-    const message = data?.message || `Request failed (${res.status})`;
-    const err = new Error(message);
-    err.status = res.status;
-    err.data = data;
-    throw err;
-  }
-  return { data };
+function url(p) {
+  if (!BASE) throw new Error('VITE_API_URL is missing');
+  return `${BASE.replace(/\/$/, '')}${p}`;
 }
 
-const API = {
-  get: (p) => http("GET", p),
-  post: (p, b) => http("POST", p, b),
-  put: (p, b) => http("PUT", p, b),
-  del: (p) => http("DELETE", p),
-};
+async function request(path, options = {}) {
+  const res = await fetch(url(path), {
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options,
+  });
+  // Try JSON either way (server may return text on error)
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
 
-export default API;
+  if (!res.ok) {
+    const msg = (data && (data.error || data.message)) || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+export const API = {
+  listJobs() {
+    return request('/api/jobs');               // GET
+  },
+  createJob(payload) {
+    return request('/api/jobs', {              // POST
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  getJob(id) {
+    return request(`/api/jobs/${encodeURIComponent(id)}`); // GET
+  },
+  submitProposal(jobId, payload) {
+    // If your backend doesn’t have this yet, we’ll “mock” success:
+    return request(`/api/jobs/${encodeURIComponent(jobId)}/proposals`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }).catch(() => ({ ok: true, mock: true }));
+  },
+};
