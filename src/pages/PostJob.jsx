@@ -1,146 +1,118 @@
-import React, { useState } from "react";
-import API from "../lib/api";
-import { useNavigate } from "react-router-dom";
+// src/pages/PostJob.jsx
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { API } from '../lib/api';
 
-const PLATFORM_FEE_PCT = 5;   // visible on UI
-const CLIENT_FEE_PCT   = 3;   // visible on UI
+const PLATFORM_FEE = 5; // %
+const CLIENT_FEE = 3;   // %
 
 export default function PostJob() {
-  const navigate = useNavigate();
+  const nav = useNavigate();
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    budget: "",
-    currency: "PI",
+    title: '',
+    description: '',
+    budget: '',
+    deadline: '',
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
 
-  const onChange = (e) => {
+  function onChange(e) {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
-  };
+  }
 
-  const budgetNum = Number(form.budget) || 0;
-  const platformFee = Math.round((budgetNum * PLATFORM_FEE_PCT) * 100) / 100 / 100; // avoid floats
-  const clientFee   = Math.round((budgetNum * CLIENT_FEE_PCT) * 100) / 100 / 100;
-
-  const onSubmit = async (e) => {
+  async function onSubmit(e) {
     e.preventDefault();
-    setError("");
-
-    if (!form.title.trim() || !form.description.trim() || !budgetNum) {
-      setError("Please fill all required fields.");
+    setErr('');
+    if (!form.title || !form.description || !form.budget) {
+      setErr('Please fill title, description, and budget.');
       return;
     }
-
+    const payload = {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      budget: Number(form.budget),
+      deadline: form.deadline || null,
+      platformFeePct: PLATFORM_FEE,
+      clientFeePct: CLIENT_FEE,
+    };
     try {
-      setSubmitting(true);
-      // Create payload the backend expects
-      const payload = {
-        title: form.title.trim(),
-        description: form.description.trim(),
-        budget: budgetNum,
-        currency: form.currency,
-      };
-
-      // POST to /api/jobs (our API helper auto-prefixes /api)
-      const res = await API.post("/jobs", payload);
-
-      // If backend returns the new job id, go to its page; otherwise back to jobs
-      const newId = res?.data?.id;
-      if (newId) {
-        navigate(`/jobs/${newId}`);
-      } else {
-        navigate("/jobs");
-      }
-    } catch (err) {
-      console.error(err);
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Could not post job. Please try again.";
-      setError(msg);
+      setLoading(true);
+      const created = await API.createJob(payload);
+      // Navigate to job detail if backend returns an id; otherwise back to list
+      if (created && created.id) nav(`/jobs/${created.id}`);
+      else nav('/');
+    } catch (e2) {
+      setErr(e2.message || 'Failed to create job.');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
-  };
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Post a Job</h1>
 
-      {error && (
-        <div className="mb-4 rounded bg-red-50 text-red-700 p-3 text-sm">
-          {error}
-        </div>
-      )}
+      {err ? <div className="mb-4 text-red-600">{err}</div> : null}
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Title *</label>
+          <label className="block mb-1 font-medium">Title</label>
           <input
             name="title"
-            type="text"
             value={form.title}
             onChange={onChange}
-            className="w-full border rounded px-3 py-2"
+            className="w-full border rounded p-2"
             placeholder="e.g., Build a landing page"
-            required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Description *</label>
+          <label className="block mb-1 font-medium">Description</label>
           <textarea
             name="description"
-            rows={5}
             value={form.description}
             onChange={onChange}
-            className="w-full border rounded px-3 py-2"
-            placeholder="Briefly describe the work…"
-            required
+            className="w-full border rounded p-2"
+            rows={5}
+            placeholder="Tell freelancers what you need…"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Budget (PI) *</label>
+            <label className="block mb-1 font-medium">Budget (PI)</label>
             <input
               name="budget"
-              type="number"
-              min="1"
               value={form.budget}
               onChange={onChange}
-              className="w-full border rounded px-3 py-2"
-              placeholder="e.g., 120"
-              required
+              type="number"
+              className="w-full border rounded p-2"
+              min={1}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Currency</label>
-            <select
-              name="currency"
-              value={form.currency}
+            <label className="block mb-1 font-medium">Deadline (optional)</label>
+            <input
+              name="deadline"
+              value={form.deadline}
               onChange={onChange}
-              className="w-full border rounded px-3 py-2 bg-white"
-            >
-              <option value="PI">PI</option>
-            </select>
+              type="date"
+              className="w-full border rounded p-2"
+            />
           </div>
         </div>
 
         <div className="text-sm text-gray-600">
-          <div>Platform fee: <strong>{PLATFORM_FEE_PCT}%</strong></div>
-          <div>Client fee: <strong>{CLIENT_FEE_PCT}%</strong></div>
+          Platform fee: <b>{PLATFORM_FEE}%</b> · Client fee: <b>{CLIENT_FEE}%</b>
         </div>
 
         <button
-          type="submit"
-          disabled={submitting}
-          className="inline-flex items-center justify-center px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
+          disabled={loading}
+          className="bg-indigo-600 text-white rounded px-4 py-2 disabled:opacity-60"
         >
-          {submitting ? "Posting…" : "Post Job"}
+          {loading ? 'Posting…' : 'Create Job'}
         </button>
       </form>
     </div>
