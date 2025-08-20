@@ -1,33 +1,23 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import API from '../lib/api';
-import { saveAuth } from '../lib/auth';
 
 export default function Login() {
-  const nav = useNavigate();
   const [email, setEmail] = useState('');
-  const [err, setErr] = useState('');
+  const [pass, setPass] = useState('');
 
-  async function submit(e) {
+  function submit(e) {
     e.preventDefault();
-    setErr('');
-    try {
-      const data = await API.post('/auth/login', { email });
-      saveAuth(data);
-      nav('/jobs/new');
-    } catch {
-      setErr('Could not log in.');
-    }
+    alert('Login (mock) — coming soon');
   }
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Login</h1>
-      {err && <p className="text-red-500 mb-3">{err}</p>}
+    <div className="max-w-sm mx-auto bg-white rounded shadow p-6">
+      <h1 className="text-xl font-semibold mb-4">Login</h1>
       <form onSubmit={submit} className="space-y-3">
-        <input className="w-full border p-2 rounded" placeholder="Email"
-          value={email} onChange={e=>setEmail(e.target.value)}/>
-        <button className="bg-indigo-600 text-white px-4 py-2 rounded w-full">Login</button>
+        <input className="w-full border rounded px-3 py-2" placeholder="Email"
+               value={email} onChange={e=>setEmail(e.target.value)} />
+        <input className="w-full border rounded px-3 py-2" type="password" placeholder="Password"
+               value={pass} onChange={e=>setPass(e.target.value)} />
+        <button className="bg-indigo-600 text-white px-4 py-2 rounded">Login</button>
       </form>
     </div>
   );
