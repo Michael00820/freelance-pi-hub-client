@@ -1,47 +1,35 @@
-// src/pages/Jobs.jsx
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import API from '../lib/api';
+import React, { useEffect, useState } from "react";
+import API from "../lib/api.js"; // note the .js extension
 
 export default function Jobs() {
   const [jobs, setJobs] = useState([]);
-  const [err, setErr] = useState('');
+  const [err, setErr] = useState("");
 
   useEffect(() => {
     (async () => {
       try {
-        const r = await API.get('/jobs');
-        setJobs(r.data || []);
+        const res = await API.get("/jobs");
+        setJobs(res.data.jobs || []);
       } catch (e) {
-        setErr('Couldn’t load jobs. Please try again.');
+        setErr("Couldn't load jobs. Please try again.");
       }
     })();
   }, []);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Open Jobs</h1>
-
-      {err && <p className="text-red-500 mb-4">{err}</p>}
-
-      <div className="space-y-4">
-        {jobs.map((j) => (
-          <Link
-            key={j.id}
-            to={`/jobs/${j.id}`}
-            className="block bg-white rounded shadow p-4 hover:shadow-md transition"
-          >
-            <div className="text-xl font-semibold">{j.title}</div>
-            <div className="text-sm text-gray-600 mt-1">
-              Budget: {j.budget} PI
-            </div>
-            <p className="mt-3 text-gray-700">{j.description}</p>
-            <div className="mt-3 text-sm text-gray-500">
-              Platform fee {j.platformFeePct}% · Client fee {j.clientFeePct}%
-            </div>
-          </Link>
-        ))}
-      </div>
+    <div>
+      <h1 style={{fontSize: 28, fontWeight: 700, marginBottom: 16}}>Open Jobs</h1>
+      {err && <p style={{color: "crimson"}}>{err}</p>}
+      {jobs.map((j) => (
+        <div key={j.id} style={{border: "1px solid #eee", borderRadius: 8, padding: 16, marginBottom: 12}}>
+          <div style={{fontWeight: 700, marginBottom: 6}}>{j.title}</div>
+          <div style={{color: "#555", marginBottom: 6}}>Budget: {j.budget} PI</div>
+          <div>{j.description}</div>
+          <div style={{color: "#777", marginTop: 8, fontSize: 14}}>
+            Platform fee {j.platformFeePct}% · Client fee {j.clientFeePct}%
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
