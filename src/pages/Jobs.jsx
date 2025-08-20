@@ -1,35 +1,78 @@
-import React, { useEffect, useState } from "react";
-import API from "../lib/api.js"; // note the .js extension
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import API from '../lib/api';
 
 export default function Jobs() {
   const [jobs, setJobs] = useState([]);
-  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState('');
 
   useEffect(() => {
+    let mounted = true;
     (async () => {
+      setLoading(true);
+      setErr('');
       try {
-        const res = await API.get("/jobs");
-        setJobs(res.data.jobs || []);
+        const data = await API.getJobs();
+        if (!mounted) return;
+        const list = Array.isArray(data) ? data : data?.jobs || [];
+        setJobs(list);
       } catch (e) {
-        setErr("Couldn't load jobs. Please try again.");
+        console.error('Failed to load jobs', e);
+        setErr('Couldn’t load jobs. Please try again.');
+      } finally {
+        if (mounted) setLoading(false);
       }
     })();
+    return () => (mounted = false);
   }, []);
 
   return (
-    <div>
-      <h1 style={{fontSize: 28, fontWeight: 700, marginBottom: 16}}>Open Jobs</h1>
-      {err && <p style={{color: "crimson"}}>{err}</p>}
-      {jobs.map((j) => (
-        <div key={j.id} style={{border: "1px solid #eee", borderRadius: 8, padding: 16, marginBottom: 12}}>
-          <div style={{fontWeight: 700, marginBottom: 6}}>{j.title}</div>
-          <div style={{color: "#555", marginBottom: 6}}>Budget: {j.budget} PI</div>
-          <div>{j.description}</div>
-          <div style={{color: "#777", marginTop: 8, fontSize: 14}}>
-            Platform fee {j.platformFeePct}% · Client fee {j.clientFeePct}%
-          </div>
+    <div className="mx-auto max-w-5xl px-4 py-6">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Open Jobs</h1>
+        <Link
+          to="/post-job"
+          className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
+        >
+          Post a Job
+        </Link>
+      </div>
+
+      {loading && <p className="text-gray-500">Loading…</p>}
+      {err && <p className="text-red-500">{err}</p>}
+
+      {!loading && !err && jobs.length === 0 && (
+        <div className="rounded-md border border-dashed p-6 text-center text-gray-600">
+          <p>No jobs yet.</p>
+          <p className="mt-2">
+            Be the first to{' '}
+            <Link to="/post-job" className="text-indigo-600 underline">
+              post a job
+            </Link>
+            .
+          </p>
         </div>
-      ))}
+      )}
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        {jobs.map((j) => (
+          <Link
+            key={j.id}
+            to={`/jobs/${j.id}`}
+            className="block rounded-lg border bg-white p-4 shadow hover:shadow-md"
+          >
+            <h2 className="text-lg font-semibold">{j.title}</h2>
+            <div className="mt-1 text-sm text-gray-600">Budget: {j.budget} PI</div>
+            <p className="mt-3 text-gray-700 line-clamp-3">{j.description}</p>
+            {(j.platformFeePct != null || j.clientFeePct != null) && (
+              <div className="mt-3 text-xs text-gray-500">
+                Platform fee {j.platformFeePct ?? 0}% · Client fee {j.clientFeePct ?? 0}%
+              </div>
+            )}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
