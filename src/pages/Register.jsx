@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import API from "../lib/api";
+import API from "../lib/api.js";
 
 export default function Register() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState("freelancer"); // or "client"
+  const [role, setRole] = useState("freelancer");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const navigate = useNavigate();
@@ -13,18 +13,13 @@ export default function Register() {
   async function handleSubmit(e) {
     e.preventDefault();
     setErr("");
-    if (!email.trim() || !name.trim()) {
-      setErr("Name and email are required");
-      return;
-    }
+    if (!email.trim() || !name.trim()) return setErr("Name and email are required");
     try {
       setLoading(true);
-      // Mock register endpoint; swap for real backend later
-      const res = await API.post("/auth/register", { email, name, role });
+      await API.post("/auth/register", { email, name, role });
       localStorage.setItem("piHub.email", email);
-      if (res?.data?.token) localStorage.setItem("piHub.token", res.data.token);
-      navigate("/dashboard");
-    } catch (e) {
+      navigate("/jobs");
+    } catch {
       setErr("Registration failed. Please try again.");
     } finally {
       setLoading(false);
@@ -32,57 +27,45 @@ export default function Register() {
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Create account</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm mb-1">Name</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            placeholder="Jane Doe"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
+    <div style={{maxWidth: 480, margin: "0 auto"}}>
+      <h1 style={{fontSize: 24, fontWeight: 700, marginBottom: 16}}>Create account</h1>
+      <form onSubmit={handleSubmit}>
+        <label>Name</label>
+        <input
+          style={{width: "100%", border: "1px solid #ddd", borderRadius: 6, padding: 10, marginTop: 6, marginBottom: 10}}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Jane Doe"
+        />
+        <label>Email</label>
+        <input
+          type="email"
+          style={{width: "100%", border: "1px solid #ddd", borderRadius: 6, padding: 10, marginTop: 6, marginBottom: 10}}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+        />
+        <label>Role</label>
+        <select
+          style={{width: "100%", border: "1px solid #ddd", borderRadius: 6, padding: 10, marginTop: 6}}
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+        >
+          <option value="freelancer">Freelancer</option>
+          <option value="client">Client</option>
+        </select>
 
-        <div>
-          <label className="block text-sm mb-1">Email</label>
-          <input
-            type="email"
-            className="w-full border rounded px-3 py-2"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Role</label>
-          <select
-            className="w-full border rounded px-3 py-2"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-          >
-            <option value="freelancer">Freelancer</option>
-            <option value="client">Client</option>
-          </select>
-        </div>
-
-        {err && <p className="text-red-600 text-sm">{err}</p>}
+        {err && <p style={{color: "crimson"}}>{err}</p>}
 
         <button
-          type="submit"
           disabled={loading}
-          className="w-full bg-indigo-600 text-white rounded px-3 py-2 disabled:opacity-60"
+          style={{marginTop: 12, width: "100%", padding: 10, borderRadius: 6, background: "#4f46e5", color: "#fff"}}
         >
           {loading ? "Creating account…" : "Create account"}
         </button>
 
-        <p className="text-sm text-gray-600">
-          Already have an account?{" "}
-          <Link to="/login" className="text-indigo-600 underline">
-            Log in
-          </Link>
+        <p style={{marginTop: 10}}>
+          Already have an account? <Link to="/login">Log in</Link>
         </p>
       </form>
     </div>
