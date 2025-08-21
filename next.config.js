@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true
-};
-module.exports = nextConfig;
+  swcMinify: false,
+  compiler: {
+    // disable SWC entirely, fall back to Babel
+  }
+}
+
+module.exports = nextConfig
